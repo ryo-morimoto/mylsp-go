@@ -7,10 +7,15 @@ import (
 	"github.com/sourcegraph/jsonrpc2"
 )
 
-type handler struct{}
+type handler struct {
+	conn  *jsonrpc2.conn
+	cache *cache
+}
 
 func NewHandler() jsonrpc2.Handler {
-	h := &handler{}
+	h := &handler{
+		cache: newCache(),
+	}
 	return jsonrpc2.HandlerWithError(h.handle)
 }
 
@@ -28,6 +33,14 @@ func (h *handler) handle(
 		return h.handleInitialize(ctx, conn, req)
 	case "initialized":
 		return nil, nil
+	case "textDocument/didOpen":
+		return h.handleTextDocumentDidOpen(ctx, conn, req)
+	case "textDocument/didChange":
+		return h.handleTextDocumentDidChange(ctx, conn, req)
+	case "textDocument/didClose":
+		return h.handleTextDocumentDidClose(ctx, conn, req)
+	case "textDocument/didSave":
+		return h.handleTextDocumentDidSave(ctx, conn, req)
 	}
 	return nil, errors.New("not implemented")
 }
