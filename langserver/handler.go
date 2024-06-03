@@ -10,11 +10,14 @@ import (
 type handler struct {
 	conn  *jsonrpc2.conn
 	cache *cache
+
+	diagnosticRequest chan lsp.DocumentURI
 }
 
 func NewHandler() jsonrpc2.Handler {
 	h := &handler{
-		cache: newCache(),
+		cache:             newCache(),
+		diagnosticRequest: make(chan lsp.DocumentURI),
 	}
 	return jsonrpc2.HandlerWithError(h.handle)
 }
@@ -27,6 +30,8 @@ func (h *handler) handle(
 	if req.Params == nil {
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
 	}
+
+	go h.handleDiagnostics()
 
 	switch req.Method {
 	case "initialize":
